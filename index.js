@@ -1,119 +1,165 @@
 const express = require("express");
 const mongoose = require("mongoose");
-require('dotenv').config();
-const cors = require('cors');
+const cors = require("cors");
+require("dotenv").config();
+
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Middleware
 app.use(express.json());
 app.use(cors());
 
-mongoose.connect(process.env.MONGODB_URI)
-.then((res) => {
-    console.log('Db connected successfully.');
-})
-.catch((err) => {
-    console.error(`Error in connecting database: ${err}`);
+// MongoDB Connection
+mongoose
+  .connect(process.env.MONGODB_URI)
+  .then(() => {
+    console.log("Database connected successfully.");
+  })
+  .catch((err) => {
+    console.error("Database connection failed:", err);
+  });
+
+/**
+ * Cart Schema
+ */
+const cartSchema = new mongoose.Schema(
+  {
+    shop: {
+      type: String,
+      required: true,
+    },
+
+    customerId: {
+      type: String,
+      default: null,
+    },
+
+    ipAddress: {
+      type: String,
+      default: null,
+    },
+
+    userAgent: {
+      type: String,
+      default: null,
+    },
+
+    cartJson: {
+      type: Object,
+      required: true,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+// Indexes for fast search
+cartSchema.index({ shop: 1, customerId: 1 });
+cartSchema.index({ shop: 1, ipAddress: 1 });
+
+const Cart = mongoose.model("Cart", cartSchema);
+
+/**
+ * Health Check
+ */
+app.get("/", (req, res) => {
+  res.json({
+    message: "Cart API Running",
+  });
 });
 
-//Create user schema
-const userSchema = mongoose.Schema({
-    name: String,
-    email: String,
-    age: Number
-});
+/**
+ * Save / Update Cart
+ */
+app.post("/api/cart/save", async (req, res) => {
+  try {
+    const {
+      shop,
+      customerId,
+      ipAddress,
+      userAgent,
+      cartJson,
+    } = req.body;
 
-//Create model
-const User = mongoose.model('User', userSchema);
+    const query = customerId
+      ? { shop, customerId }
+      : { shop, ipAddress };
 
-app.get('/', (req, res) => {
+    const cart = await Cart.findOneAndUpdate(
+      query,
+      {
+        shop,
+        customerId,
+        ipAddress,
+        userAgent,
+        cartJson,
+      },
+      {
+        upsert: true,
+        new: true,
+      }
+    );
+
     res.json({
-        status: 'API Running'
+      success: true,
+      data: cart,
     });
-});
+  } catch (err) {
+    console.error(err);
 
-app.get('/users', async (req, res) => {
-    try{
-        const users = await User.find();
-        return res.status(200).json({message: "success", users});
-    }catch(err){
-        console.error(err);
-        return res.status(500).json({
-            message: 'Internal Server Error'
-        });
-    }
-});
-
-app.get('/user/:id', async (req, res) => {
-    try{
-        const userId = req.params.id;
-        const user = await User.findById(userId);
-
-        if(!user){
-            return res.status(404).json({message: "User not found."});
-        }
-
-        return res.status(200).json({message: "success", data: user});
-
-    }catch(err){
-        console.error(err);
-        return res.status(500).json({
-            message: 'Internal Server Error'
-        });
-    }
-});
-
-app.put('/user/:id', async (req, res) => {
-    try{
-        const {name, email} = req.body;
-        const userId = req.params.id;
-        const userUpdate = await User.findByIdAndUpdate(userId, {name, email}, { new: true, runValidators: true });
-
-        if(!userUpdate){
-            return res.status(404).json({message: "User not found."});
-        }
-
-        return res.status(200).json({message: "success", data: userUpdate});
-
-    }catch(err){
-        console.error(err);
-        return res.status(500).json({
-            message: 'Internal Server Error'
-        });
-    }
-});
-
-app.delete('/user/:id', async (req, res) => {
-    try{
-        const userId = req.params.id;
-        const user = await User.findById(userId);
-
-        if(!user){
-            return res.status(404).json({message: "User not found."});
-        }
-
-        await user.deleteOne();
-        return res.status(200).json({message: "success", data: user});
-
-    }catch(err){
-        console.error(err);
-        return res.status(500).json({
-            message: 'Internal Server Error'
-        });
-    }
-});
-
-app.post('/users', async (req, res) => {
-    const {name, email, age} = req.body;
-    const newUser = await User.create({
-        name,
-        email,
-        age
+    res.status(500).json({
+      success: false,
+      message: err.message,
     });
-
-    return res.status(201).json({message: "User created successfully.", newUser});
+  }
 });
 
+<<<<<<< HEAD
 app.listen(port, ()=>{
     console.log(`Server is running on http://localhost:${port}`);
 });
+=======
+/**
+ * Get Cart
+ */
+app.get("/api/cart", async (req, res) => {
+  try {
+    const {
+      shop,
+      customerId,
+      ipAddress,
+    } = req.query;
+
+    const query = customerId
+      ? { shop, customerId }
+      : { shop, ipAddress };
+
+    const cart = await Cart.findOne(query);
+
+    if (!cart) {
+      return res.status(404).json({
+        success: false,
+        message: "Cart not found",
+      });
+    }
+
+    res.json(cart);
+  } catch (err) {
+    console.error(err);
+
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+});
+
+/**
+ * Start Server
+ */
+app.listen(port, () => {
+  console.log(`Server running on http://localhost:${port}`);
+});
+>>>>>>> 5b66d1c (initail changes for required api)
