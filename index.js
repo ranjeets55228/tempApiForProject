@@ -16,7 +16,7 @@ mongoose.connect(process.env.MONGODB_URI)
     console.error(`Error in connecting database: ${err}`);
 });
 
-//Create user schema
+//Create user schema schema
 const userSchema = mongoose.Schema({
     name: String,
     email: String,
