@@ -116,11 +116,6 @@ app.post("/api/cart/save", async (req, res) => {
   }
 });
 
-<<<<<<< HEAD
-app.listen(port, ()=>{
-    console.log(`Server is running on http://localhost:${port}`);
-});
-=======
 /**
  * Get Cart
  */
@@ -162,4 +157,3 @@ app.get("/api/cart", async (req, res) => {
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });
->>>>>>> 5b66d1c (initail changes for required api)
